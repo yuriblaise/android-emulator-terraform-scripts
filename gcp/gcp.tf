@@ -201,7 +201,7 @@ resource "null_resource" "gcp_adb_upload" {
     }
 
   provisioner "remote-exec" {
-    inline = ["mkdir ~/.android/"]
+    inline = ["mkdir -p ~/.android/"]
   }
 
   provisioner "local-exec" {
