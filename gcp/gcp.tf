@@ -204,9 +204,12 @@ resource "null_resource" "gcp_adb_upload" {
     inline = ["mkdir -p ~/.android/"]
   }
 
-  provisioner "local-exec" {
-    command = "scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${var.gcp_privatekeypath} ${var.adb_keys}/adbkey ${var.gcp_user}@${google_compute_address.static.address}:~/.android/ && scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${var.gcp_privatekeypath} ${var.adb_keys}/adbkey.pub ${var.gcp_user}@${google_compute_address.static.address}:~/.android/"
-    
+ provisioner "local-exec" {
+    command = "scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${var.gcp_privatekeypath} ${var.adb_keys}/adbkey ${var.gcp_user}@${google_compute_address.static.address}:~/.android/"
+  }
+
+ provisioner "local-exec" {
+    command = "scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${var.gcp_privatekeypath} ${var.adb_keys}/adbkey.pub ${var.gcp_user}@${google_compute_address.static.address}:~/.android/"
   }
 }
 
