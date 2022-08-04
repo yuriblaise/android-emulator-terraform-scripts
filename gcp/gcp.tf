@@ -267,5 +267,25 @@ output "vm_ip" {
 }
 
 output "instance_name" {
-  value = google_compute_address.static.address
+  value = google_compute_instance.dev.name
+}
+
+output "instance_zone" {
+  value = google_compute_instance.dev.zone
+}
+
+output "gcp_credentials" {
+  value = var.gcp_credentials
+}
+
+output "gcp_project" {
+  value = var.gcp_project
+}
+
+output "current_status" {
+  value = google_compute_instance.dev.current_status
+}
+
+output "adb_path" {
+  value = var.adb_path
 }
