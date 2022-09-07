@@ -137,7 +137,12 @@ adb start-server
 echo "STARTING EMU-DOCKER SCRIPT"
 emu-docker -h || true
 pip install markupsafe==2.0.1 # ensure that the a working version of markup is installed for now
-if [ -z "$custom_command" ]; then echo yes |  emu-docker create canary "$image_regx" && ./create_web_container.sh -p user1,passwd1 -a; else eval "$custom_command"; fi
+if [ -z "$custom_command" ]; then 
+    for i in 1 2 3; do echo y | emu-docker create canary "$image_regx" && break || sleep 15; done
+    ./create_web_container.sh -p user1,passwd1 -a
+else 
+    eval "$custom_command"
+fi
 docker-compose -f ~/android-emulator-container-scripts/js/docker/docker-compose-build.yaml -f ~/android-emulator-container-scripts/js/docker/development.yaml up -d
 exit 0
 EOF

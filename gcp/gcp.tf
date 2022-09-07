@@ -75,7 +75,7 @@ resource "google_compute_instance" "dev" {
 
   boot_disk {
     initialize_params {
-      size = 64
+      size = 128
       image = "ubuntu-os-cloud/ubuntu-1804-lts"
     }
   }
@@ -154,6 +154,7 @@ resource "null_resource" "gcp_file_upload" {
   provisioner "remote-exec" {
     inline = [
       "mkdir -p ~/vm_scripts",
+      "mkdir -p /home/${var.gcp_user}/.docker",
       "ls ~/",
     ]
   }
@@ -164,30 +165,55 @@ resource "null_resource" "gcp_file_upload" {
   }
 }
 
+resource "null_resource" "docker_push" {
+  depends_on=[null_resource.gcp_remote_exec]
+  count = var.dockerpush ? 1 : 0
+  connection {
+      host        = google_compute_address.static.address
+      type        = "ssh"
+      user        = var.gcp_user
+      timeout     = "60m"
+      private_key = file(var.gcp_privatekeypath)
+    }
+  provisioner "file" {    
+        source = "${var.docker_config}"
+        destination = "/home/${var.gcp_user}/.docker/${basename(var.docker_config)}"
+  }
+  provisioner "remote-exec" {
+    inline = ["/bin/bash ~/vm_scripts/docker_vm_script.sh docker_push ${lower(var.dockerhub_account)} ${lower(local.container_name)}"]
+  }
+}
+
 resource "null_resource" "gcp_remote_exec" {
   depends_on=[null_resource.gcp_file_upload]
   connection {
       host        = google_compute_address.static.address
       type        = "ssh"
       user        = var.gcp_user
-      timeout     = "500s"
+      timeout     = "10m"
       private_key = file(var.gcp_privatekeypath)
     }
   provisioner "remote-exec" {
     inline = [
       "chmod +x ~/vm_scripts/*sh",
-      "/bin/bash ~/vm_scripts/vm_emu_docker_install.sh ${local.script_args}",
+      "~/vm_scripts/vm_emu_docker_install.sh ${local.script_args}",
       #adds suspend time value to scripts
       "awk -i inplace -v line='suspend_time=${var.suspend_time}' 'NR==1 && $0 != line{print line} 1' ~/vm_scripts/docker_vm_script.sh",
       "/bin/bash ~/vm_scripts/docker_vm_script.sh wait_docker_health",
       "/bin/bash ~/vm_scripts/docker_vm_script.sh try_adb_connect",
       "/bin/bash ~/vm_scripts/docker_vm_script.sh device_power_on",
-      "nohup /bin/bash ~/vm_scripts/docker_vm_script.sh shutdown_on_idle </dev/null &>/dev/null &",
-      "sleep 5"
+      "echo 'waiting...'",
+      "sleep 90",
+      "echo 'waiting...'",
+      "sleep 90",
+      "echo 'Saving Snapshot...'",
+      "/bin/bash ~/vm_scripts/docker_vm_script.sh save_snapshot"
     ]
   }
  
 }
+
+
 
 resource "null_resource" "gcp_adb_upload" {
   depends_on=[google_compute_instance.dev]
@@ -201,15 +227,12 @@ resource "null_resource" "gcp_adb_upload" {
     }
 
   provisioner "remote-exec" {
-    inline = ["mkdir -p ~/.android/"]
+    inline = ["mkdir ~/.android/"]
   }
 
- provisioner "local-exec" {
-    command = "scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${var.gcp_privatekeypath} ${var.adb_keys}/adbkey ${var.gcp_user}@${google_compute_address.static.address}:~/.android/"
-  }
-
- provisioner "local-exec" {
-    command = "scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${var.gcp_privatekeypath} ${var.adb_keys}/adbkey.pub ${var.gcp_user}@${google_compute_address.static.address}:~/.android/"
+  provisioner "local-exec" {
+    command = "scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${var.gcp_privatekeypath} ${var.adb_keys}/adbkey ${var.gcp_user}@${google_compute_address.static.address}:~/.android/ && scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${var.gcp_privatekeypath} ${var.adb_keys}/adbkey.pub ${var.gcp_user}@${google_compute_address.static.address}:~/.android/"
+    
   }
 }
 
@@ -249,7 +272,7 @@ resource "null_resource" "gcp_adb_connection" {
 
 resource "null_resource" "gcp_destroy_all" {
   count = var.auto_destroy ? 1 : 0
-  depends_on=[null_resource.gcp_remote_exec]
+  depends_on=[null_resource.docker_push]
   connection {
       host        = google_compute_address.static.address
       type        = "ssh"
@@ -270,22 +293,18 @@ output "instance_name" {
   value = google_compute_instance.dev.name
 }
 
-output "instance_zone" {
-  value = google_compute_instance.dev.zone
+output "image_name" {
+  value = local.image_reg_alphanum
 }
 
-output "gcp_credentials" {
-  value = var.gcp_credentials
+output "image_var" {
+  value = var.image_regexp
 }
 
-output "gcp_project" {
-  value = var.gcp_project
+output "container_var" {
+  value = var.container_name
 }
 
-output "current_status" {
-  value = google_compute_instance.dev.current_status
-}
-
-output "adb_path" {
-  value = var.adb_path
+output "container_name" {
+  value = local.container_name
 }

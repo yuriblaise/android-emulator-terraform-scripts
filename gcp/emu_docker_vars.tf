@@ -28,7 +28,7 @@ variable "launch_command" {
 variable "adb_connect" {
    description = "Automatically connect to container via adb after emulator is turned on"
    type        = bool
-   default     = true
+   default     = false
 }
 variable "adb_keys" {
    description = "path to the folder containing the adb keypair to use with the container and VM"
@@ -43,7 +43,7 @@ variable "adb_path" {
 variable "download_adb_keys" {
    description = "download adb keys from the container to the results directory"
    type        = bool
-   default     = true
+   default     = false
 }
 variable "image_regexp" {
    description = "regexp to select image for docker container"
@@ -84,7 +84,7 @@ variable "suspend_on_idle" {
 
 variable "auto_destroy" {
    type = bool
-   default = false
+   default = true
    description = "terraform will destroy all cloud resources after the VM has been up"
 }
 
@@ -98,4 +98,27 @@ variable "restart" {
    type = bool
    default = false
    description = "Restart the VM"
+}
+
+variable "dockerpush" {
+   type=bool
+   default=true
+   description="Toggle if the container image should be pushed after snapshot creation"
+}
+
+variable "docker_config" {
+   type=string
+   default="~/.docker/config.json"
+   description="Path to docker config json file"
+}
+
+variable "dockerhub_account" {
+   type=string
+   description="Dockerhub account for tagging an image (e.g account/container_name)"
+}
+
+variable "container_name" {
+   type=string
+   default=""
+   description="container_name for an image (e.g account/container_name)"
 }

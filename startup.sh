@@ -15,6 +15,7 @@ if docker-compose -f $home_dir/android-emulator-container-scripts/js/docker/dock
     /bin/bash $home_dir/vm_scripts/docker_vm_script.sh wait_docker_health
     /bin/bash $home_dir/vm_scripts/docker_vm_script.sh try_adb_connect
     /bin/bash $home_dir/vm_scripts/docker_vm_script.sh device_power_on
+    /bin/bash $home_dir/vm_scripts/docker_vm_script.sh load_snapshot
     nohup /bin/bash $home_dir/vm_scripts/docker_vm_script.sh shutdown_on_idle </dev/null &>/dev/null &
     sleep 5
 

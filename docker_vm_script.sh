@@ -5,6 +5,33 @@ suspend_time=${suspend_time:-20}
 SECONDS=0
 stop=$(($SECONDS+60*$suspend_time))
 
+
+
+# For starting the virtual device with a premade container
+start_snapshot_container () {
+    #/usr/bin/toolbox
+    #alias docker-compose='docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "/home/yurigblaise:/home/yurigblaise" -w="/home/yurigblaise" docker/compose:1.24.0'
+    #sed -i '/.*emulator_emulator.*/{n;N;N;d}' ./docker/docker-compose-build.yaml
+    #sed -i "s|emulator_emulator|blaiseyuri/emu_avd_snapshot_p_x86_64|" ./docker/docker-compose-build.yaml
+    #cd js/jwt-provider
+    #wget https://bootstrap.pypa.io/pip/3.6/get-pip.py
+    #python get-pip.py --user
+    #python -m pip install -r requirements.txt
+    #cp jwt_secrets_pub.jwks ../docker/certs/jwt_secrets_pub.jwks
+    #docker-compose -f ./docker/docker-compose-build.yaml -f  ./docker/development.yaml up -d
+
+    snapshot_image=$1
+    curl https://codeload.github.com/google/android-emulator-container-scripts/tar.gz/master  | tar -xz --strip=2 "android-emulator-container-scripts-master/js"
+    sed -i '/.*emulator_emulator.*/{n;N;N;d}' ./docker/docker-compose-build.yaml
+    sed -i "s/emulator_emulator/${snapshot_image}/" ./docker/docker-compose-build.yaml
+    dir=$PWD
+    sudo su -l $USER << EOF
+    echo $PWD
+    sudo chmod 666 /var/run/docker.sock
+    docker-compose -f $dir/docker/docker-compose-build.yaml -f  $dir/docker/development.yaml up -d
+EOF
+}
+
 start_container () {
     sudo su -l $USER << EOF
     echo "STARTING NESTED DOCKER CONTAINER"
@@ -35,6 +62,18 @@ try_adb_connect () {
         echo "Shutting down..."
         sudo shutdown -h now
     fi
+}
+
+docker_push() {
+    default_id=$(get_docker_id);
+    container_name=$2
+    dockerhub_account=$1
+    docker login
+    docker commit $default_id $container_name
+    echo "Commit completed tagging image and pushing"
+    docker image tag emulator_emulator "${dockerhub_account}/${container_name}"
+    echo "Docker image "${dockerhub_account}/${container_name}" tagged now being pushed"
+    docker push ${dockerhub_account}/${container_name}
 }
 
 get_docker_id() {
@@ -71,16 +110,16 @@ save_snapshot() {
     default_id=$(get_docker_id)
     echo "Connected to container, saving snapshot"
     docker exec $default_id /android/sdk/platform-tools/adb emu avd snapshot save container_snapshot
-    # For downloading snapshots: docker exec $default_id /android/sdk/platform-tools/adb emu avd snapshot pull container_snapshot ~/container_snapshots
+    docker exec $default_id /android/sdk/platform-tools/adb emu avd snapshot pull container_snapshot /home/container_snapshot
 }
 
 load_snapshot () {
     device_serial=${1:-$device_serial}
     default_id=$(get_docker_id)
     echo "Connected to container, loading snapshot"
+    docker exec $default_id /android/sdk/platform-tools/adb emu avd snapshot push container_snapshot /home/container_snapshot
     docker exec $default_id /android/sdk/platform-tools/adb emu avd snapshot load container_snapshot
-    # For selecting snapshots: docker exec $(~/vm_scripts/docker_vm_script.sh get_docker_id) /android/sdk/platform-tools/adb emu avd snapshot list
-    # For downloading snapshots: docker exec $(~/vm_scripts/docker_vm_script.sh get_docker_id) /android/sdk/platform-tools/adb emu avd snapshot push container_snapshot ~/container_snapshots
+    docker exec $default_id /android/sdk/platform-tools/adb emu avd snapshot list
 }
 
 check_emu_idle () {
