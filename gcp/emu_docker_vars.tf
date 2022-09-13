@@ -100,6 +100,12 @@ variable "restart" {
    description = "Restart the VM"
 }
 
+variable "load_snapshot_container" {
+   type = bool
+   default = true
+   description = "Load a prebuilt snapshot of a container instead of building from scratch"
+}
+
 variable "dockerpush" {
    type=bool
    default=true

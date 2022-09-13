@@ -196,7 +196,8 @@ resource "null_resource" "gcp_remote_exec" {
   provisioner "remote-exec" {
     inline = [
       "chmod +x ~/vm_scripts/*sh",
-      "~/vm_scripts/vm_emu_docker_install.sh ${local.script_args}",
+      "/bin/bash ${var.load_snapshot_container} && ~/vm_scripts/docker_vm_script.sh snapshot_compose",
+      "/bin/bash ${!var.load_snapshot_container} && ~/vm_scripts/vm_emu_docker_install.sh ${local.script_args}",
       #adds suspend time value to scripts
       "awk -i inplace -v line='suspend_time=${var.suspend_time}' 'NR==1 && $0 != line{print line} 1' ~/vm_scripts/docker_vm_script.sh",
       "/bin/bash ~/vm_scripts/docker_vm_script.sh wait_docker_health",
@@ -210,7 +211,7 @@ resource "null_resource" "gcp_remote_exec" {
       "/bin/bash ~/vm_scripts/docker_vm_script.sh save_snapshot"
     ]
   }
- 
+
 }
 
 
