@@ -140,7 +140,7 @@ resource "null_resource" "restart_instance" {
 
 
 resource "null_resource" "gcp_file_upload" {
-  for_each = local.files
+  for_each = fileset("../scripts", "*")
   connection {
       host        = google_compute_address.static.address
       type        = "ssh"
@@ -162,6 +162,23 @@ resource "null_resource" "gcp_file_upload" {
   provisioner "file" {    
         source = "${each.value}"
         destination = "/home/${var.gcp_user}/vm_scripts/${basename(each.value)}"
+  }
+}
+
+resource "null_resource" "avd_config_upload" {
+  depends_on=[null_resource.gcp_file_upload]
+  count = var.avd_config != "" ? 1 : 0
+  connection {
+      host        = google_compute_address.static.address
+      type        = "ssh"
+      user        = var.gcp_user
+      timeout     = "500s"
+      private_key = file(var.gcp_privatekeypath)
+    }
+
+  provisioner "file" {    
+        source = "${var.avd_config}"
+        destination = "/tmp/${ basename(var.avd_config) }"
   }
 }
 
