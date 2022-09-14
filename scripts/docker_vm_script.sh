@@ -8,9 +8,8 @@ shopt -s expand_aliases
 alias docker-compose='docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "/home/${USER}:/home/$USER" -w="/home/${USER}" docker/compose:1.24.0'
 
 snapshot_compose () {
-    PASSWDS="${1:-USER,hello}"
-    username="${2:-blaiseyuri}"
-    image="${3:-emu_avd_snapshot_p_x86_64}"
+    image="${1:-blaiseyuri/emu_avd_snapshot_p_x86_64}"
+    PASSWDS="${2:-USER,hello}"
     echo PASSWDS
     cd ~/
     mkdir -p ~/.android
@@ -18,7 +17,7 @@ snapshot_compose () {
     shopt -s expand_aliases
     curl https://codeload.github.com/google/android-emulator-container-scripts/tar.gz/master  | tar -xz --strip=2
     sed -i '/.*emulator_emulator.*/{n;N;N;d}' docker/docker-compose-build.yaml
-    sed -i "s|emulator_emulator|${username}/${image}|" docker/docker-compose-build.yaml
+    sed -i "s|emulator_emulator|${image}|" docker/docker-compose-build.yaml
     sed -i "s|~/.android/adbkey|$(readlink -f ~/.android/adbkey)|" docker/development.yaml
     cd jwt-provider
     pip3 install -r ./requirements.txt

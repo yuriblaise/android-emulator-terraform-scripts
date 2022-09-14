@@ -100,7 +100,7 @@ variable "restart" {
    description = "Restart the VM"
 }
 
-variable "load_snapshot_container" {
+variable "load_snapshot_image" {
    type = bool
    default = true
    description = "Load a prebuilt snapshot of a container instead of building from scratch"
@@ -120,11 +120,18 @@ variable "docker_config" {
 
 variable "dockerhub_account" {
    type=string
-   description="Dockerhub account for tagging an image (e.g account/container_name)"
+   default = ""
+   description="Dockerhub account for pushing an image (e.g account/container_name)"
+}
+
+variable "snapshot_image" {
+   type=string
+   default=""
+   description="Name of the snapshot image to pull (e.g account/container_name)"
 }
 
 variable "container_name" {
    type=string
    default=""
-   description="container_name for an image (e.g account/container_name)"
+   description="Name of the container to push (e.g account/container_name)"
 }

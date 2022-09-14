@@ -184,7 +184,7 @@ resource "null_resource" "avd_config_upload" {
 
 resource "null_resource" "docker_push" {
   depends_on=[null_resource.gcp_remote_exec]
-  count = var.dockerpush ? 1 : 0
+  count = var.dockerpush && var.dockerhub_account != "" ? 1 : 0
   connection {
       host        = google_compute_address.static.address
       type        = "ssh"
@@ -213,8 +213,8 @@ resource "null_resource" "gcp_remote_exec" {
   provisioner "remote-exec" {
     inline = [
       "chmod +x ~/vm_scripts/*sh",
-      "/bin/bash ${var.load_snapshot_container} && ~/vm_scripts/docker_vm_script.sh snapshot_compose",
-      "/bin/bash ${!var.load_snapshot_container} && ~/vm_scripts/vm_emu_docker_install.sh ${local.script_args}",
+      "/bin/bash ${var.load_snapshot_image} && ~/vm_scripts/docker_vm_script.sh snapshot_compose ${var.snapshot_image}",
+      "/bin/bash ${!var.load_snapshot_image} && ~/vm_scripts/vm_emu_docker_install.sh ${local.script_args}",
       #adds suspend time value to scripts
       "awk -i inplace -v line='suspend_time=${var.suspend_time}' 'NR==1 && $0 != line{print line} 1' ~/vm_scripts/docker_vm_script.sh",
       "/bin/bash ~/vm_scripts/docker_vm_script.sh wait_docker_health",
