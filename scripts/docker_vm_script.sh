@@ -4,32 +4,28 @@ device_serial="localhost:5555"
 suspend_time=${suspend_time:-20}
 SECONDS=0
 stop=$(($SECONDS+60*$suspend_time))
+shopt -s expand_aliases
+alias docker-compose='docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "/home/${USER}:/home/$USER" -w="/home/${USER}" docker/compose:1.24.0'
 
-
-
-# For starting the virtual device with a premade container
-start_snapshot_container () {
-    #/usr/bin/toolbox
-    #alias docker-compose='docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "/home/yurigblaise:/home/yurigblaise" -w="/home/yurigblaise" docker/compose:1.24.0'
-    #sed -i '/.*emulator_emulator.*/{n;N;N;d}' ./docker/docker-compose-build.yaml
-    #sed -i "s|emulator_emulator|blaiseyuri/emu_avd_snapshot_p_x86_64|" ./docker/docker-compose-build.yaml
-    #cd js/jwt-provider
-    #wget https://bootstrap.pypa.io/pip/3.6/get-pip.py
-    #python get-pip.py --user
-    #python -m pip install -r requirements.txt
-    #cp jwt_secrets_pub.jwks ../docker/certs/jwt_secrets_pub.jwks
-    #docker-compose -f ./docker/docker-compose-build.yaml -f  ./docker/development.yaml up -d
-
-    snapshot_image=$1
-    curl https://codeload.github.com/google/android-emulator-container-scripts/tar.gz/master  | tar -xz --strip=2 "android-emulator-container-scripts-master/js"
-    sed -i '/.*emulator_emulator.*/{n;N;N;d}' ./docker/docker-compose-build.yaml
-    sed -i "s/emulator_emulator/${snapshot_image}/" ./docker/docker-compose-build.yaml
-    dir=$PWD
-    sudo su -l $USER << EOF
-    echo $PWD
-    sudo chmod 666 /var/run/docker.sock
-    docker-compose -f $dir/docker/docker-compose-build.yaml -f  $dir/docker/development.yaml up -d
-EOF
+snapshot_compose () {
+    PASSWDS="${1:-USER,hello}"
+    username="${2:-blaiseyuri}"
+    image="${3:-emu_avd_snapshot_p_x86_64}"
+    echo PASSWDS
+    cd ~/
+    mkdir -p ~/.android
+    adb keygen ~/.android/adbkey
+    shopt -s expand_aliases
+    curl https://codeload.github.com/google/android-emulator-container-scripts/tar.gz/master  | tar -xz --strip=2
+    sed -i '/.*emulator_emulator.*/{n;N;N;d}' docker/docker-compose-build.yaml
+    sed -i "s|emulator_emulator|${username}/${image}|" docker/docker-compose-build.yaml
+    sed -i "s|~/.android/adbkey|$(readlink -f ~/.android/adbkey)|" docker/development.yaml
+    cd jwt-provider
+    pip3 install -r ./requirements.txt
+    python3 ./gen-passwords.py --pairs  "${PASSWDS}" || exit 1
+    cp ./jwt_secrets_pub.jwks ../docker/certs/jwt_secrets_pub.jwks
+    cd ..    
+    docker-compose -f docker/docker-compose-build.yaml -f  docker/development.yaml up -d --build
 }
 
 start_container () {
