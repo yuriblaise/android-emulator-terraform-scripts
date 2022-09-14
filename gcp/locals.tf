@@ -25,6 +25,7 @@
         config = var.avd_config != "" ? "-c /tmp/${ basename(var.avd_config)}" : ""
         props = var.avd_props != "" ? "-p ${var.avd_props}" : ""
         script_args = "${local.image_regexp} ${local.kvm_on} ${local.command} ${local.config} ${local.props}"
+        custom_dependencies = length(var.custom_exec) > 0 ? concat(["null_resource.gcp_remote_exec"], var.custom_exec) : []
         local_config = var.avd_config != "" ? "-c ${var.avd_config}" : ""
         gpu = 0
     }

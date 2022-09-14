@@ -108,7 +108,7 @@ resource "google_compute_instance" "dev" {
     scopes = ["compute-ro"]
   }
   
-  metadata_startup_script = file("../startup.sh")
+  metadata_startup_script = file("../scripts/startup.sh")
 
   metadata = {
     ssh-keys = "${var.gcp_user}:${file(var.gcp_publickeypath)}",
@@ -183,7 +183,7 @@ resource "null_resource" "avd_config_upload" {
 }
 
 resource "null_resource" "docker_push" {
-  depends_on=[null_resource.gcp_remote_exec]
+  depends_on=[local.custom_dependencies]
   count = var.dockerpush && var.dockerhub_account != "" ? 1 : 0
   connection {
       host        = google_compute_address.static.address

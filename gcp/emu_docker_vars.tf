@@ -135,3 +135,9 @@ variable "container_name" {
    default=""
    description="Name of the container to push (e.g account/container_name)"
 }
+
+variable "custom_exec" {
+   type=list(string)
+   default=[]
+   description="List of terraform resource names to run before the docker image is pushed"
+}
